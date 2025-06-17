@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\AutoQuizApi.props" />
+</Project>

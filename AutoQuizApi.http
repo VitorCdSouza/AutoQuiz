@@ -1,0 +1,6 @@
+@AutoQuizApi_HostAddress = http://localhost:5213
+
+GET {{AutoQuizApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
