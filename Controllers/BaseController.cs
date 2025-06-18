@@ -1,4 +1,4 @@
-using ExpenseTrackerApi.Utils;
+using AutoQuizApi.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

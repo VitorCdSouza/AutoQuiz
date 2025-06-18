@@ -1,0 +1,51 @@
+-- CreatedAt https://www.planttext.com/--
+
+@startuml
+title AutoQuiz
+
+class User {
++Guid Id
++string Email
++string PasswordSalt
++string PasswordHash
++DateTime CreatedAt
+}
+
+class SourceDocument {
++Guid Id
++string OriginalFileName
++string StoredFileName
++string ContentType
++DateTime UploadedAt
+}
+
+class Quiz {
++Guid Id
++string Name
++DateTime CreatedAt
+'-- Relationships --
++Guid UserId
++Guid SourceDocumentId
+}
+
+class Question {
++Guid Id
++string Text ' The question's statement
+'-- Relationship --
++Guid QuizId
+}
+
+class Answer {
++Guid Id
++string Text ' The answer option's text
++bool IsCorrect ' Marks the correct answer
+'-- Relationship --
++Guid QuestionId
+}
+
+User "1" -- "0.." Quiz : "creates"
+SourceDocument "1" -- "1.." Quiz : "generates"
+Quiz "1" -- "1.." Question : "contains"
+Question "1" -- "2.." Answer : "has"
+@enduml
+
