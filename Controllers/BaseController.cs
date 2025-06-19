@@ -1,4 +1,4 @@
-using AutoQuizApi.Utils;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,14 +7,16 @@ namespace AutoQuizApi.Controllers;
 [Authorize]
 public class BaseController : ControllerBase
 {
-    protected int GetLoggedUserId()
+    protected int GetLoggedInUserId()
     {
-        string token = HttpContext.Request.Headers["Authorization"].ToString().Remove(0, 7);
-        int userId = 0;
-        if (!Int32.TryParse(Encryption.GetIdUserByToken(token), out userId))
+        if (User?.Identity?.IsAuthenticated == true)
         {
-            return 0;
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdClaim, out int userId))
+            {
+                return userId;
+            }
         }
-        return userId;
+        return 0;
     }
 }

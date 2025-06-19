@@ -1,6 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 public class CreateUserDto
 {
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
+    [Required, EmailAddress]
+    public required string Email { get; set; }
+
+    [Required]
+    public required string Password { get; set; }
 }

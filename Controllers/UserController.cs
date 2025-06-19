@@ -1,123 +1,48 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
-using AutoQuizApi.Controllers;
-using AutoQuizApi.Utils;
-using Microsoft.AspNetCore.Authorization;
+using AutoQuizApi.Data;
+using AutoQuizApi.Interfaces;
+using AutoQuizApi.Models;
+using AutoQuizApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
-[Authorize]
+namespace AutoQuizApi.Controllers;
+
 [Route("api/[controller]")]
 [ApiController]
 public class UserController : BaseController
 {
-    private readonly ExpenseTrackerContext _context;
-    private readonly IConfiguration _configuration;
+    private readonly IUserRepository _userRepository;
+    private readonly ITokenService _tokenRepository;
+    private readonly AutoQuizDbContext _dbcontext;
 
-    public UserController(ExpenseTrackerContext context, IConfiguration configuration)
+    public UserController(IUserRepository userRepository, ITokenService tokenService, AutoQuizDbContext dbcontext)
     {
-        _context = context;
-        _configuration = configuration;
+        _userRepository = userRepository;
+        _tokenRepository = tokenService;
+        _dbcontext = dbcontext;
     }
 
-    private string CreateToken(User usr)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(CreateUserDto userDto)
     {
-        List<Claim> claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Actor, usr.Id.ToString()),
-                new Claim(ClaimTypes.Email, usr.Email),
-            };
-
-        string? keyValue = _configuration.GetSection("TokenConfiguration:Key").Value;
-        if (string.IsNullOrEmpty(keyValue))
+        if (await _userRepository.GetByEmailAsync(userDto.Email) != null)
         {
-            throw new InvalidOperationException("Token key is not configured.");
+            return BadRequest("Este e-mail já está em uso.");
         }
 
-        SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyValue));
-        SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+        using var hmac = new HMACSHA512();
+
+        var user = new User
         {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.Now.AddMonths(1),
-            SigningCredentials = creds
-        };
-        JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-        SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
-    }
-
-
-    [HttpGet]
-    public async Task<ActionResult<User>> GetUserById()
-    {
-        int userId = GetUserIdToken();
-
-        User? user = await _context.Users.Include(a => a.Account).FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-        {
-            return BadRequest("User does not exist");
-        }
-
-        return Ok(user);
-    }
-
-    [AllowAnonymous]
-    [HttpPost("Register")]
-    public async Task<ActionResult<User>> RegisterUser(CreateUserDto dto)
-    {
-        if (dto.Email == null || dto.Password == null || dto.Name == null)
-        {
-            return BadRequest("Empty fields");
-        }
-
-        User user = new User
-        {
-            Email = dto.Email,
-            Password = dto.Password
+            Email = userDto.Email.ToLower(),
+            PasswordSalt = hmac.Key,
+            PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(userDto.Password))
         };
 
-        Account acc = new Account
-        {
-            Name = dto.Name,
-            User = user,
-        };
+        await _userRepository.AddAsync(user);
+        await _dbcontext.SaveChangesAsync();
 
-        Encryption.CreatePasswordHash(user.Password, out byte[] hash, out byte[] salt);
-        user.Password = string.Empty;
-        user.PasswordHash = hash;
-        user.PasswordSalt = salt;
-
-        user.Account = acc;
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return Ok(user);
-    }
-
-    [AllowAnonymous]
-    [HttpPost("Login")]
-    public async Task<ActionResult<User>> LoginUser(AuthUserDto dto)
-    {
-        if (dto.Email == null || dto.Password == null)
-        {
-            return BadRequest("Empty fields");
-        }
-
-        User? user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        if (user == null)
-        {
-            return BadRequest("Invalid credentials");
-        }
-        else if (!Encryption.VerifyPasswordHash(dto.Password, user.PasswordHash, user.PasswordSalt))
-        {
-            return BadRequest("Invalid credentials");
-        }
-
-        string token = CreateToken(user);
-
-        return Ok(token);
+        return Ok(new { message = "Usuário registrado com sucesso." });
     }
 }

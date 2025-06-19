@@ -1,5 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 public class AuthUserDto
 {
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+    [Required, EmailAddress]
+    public required string Email { get; set; }
+
+    [Required, MinLength(8)]
+    public required string Password { get; set; }
 }
