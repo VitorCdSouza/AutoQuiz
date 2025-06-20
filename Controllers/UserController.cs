@@ -10,7 +10,7 @@ namespace AutoQuizApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserController : BaseController
+public class UserController : ControllerBase
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenRepository;
@@ -28,12 +28,12 @@ public class UserController : BaseController
     {
         if (await _userRepository.GetByEmailAsync(userDto.Email) != null)
         {
-            return BadRequest("Este e-mail já está em uso.");
+            return BadRequest("Email already in use");
         }
 
-        using var hmac = new HMACSHA512();
+        using HMACSHA512 hmac = new HMACSHA512();
 
-        var user = new User
+        User user = new User
         {
             Email = userDto.Email.ToLower(),
             PasswordSalt = hmac.Key,
@@ -43,6 +43,61 @@ public class UserController : BaseController
         await _userRepository.AddAsync(user);
         await _dbcontext.SaveChangesAsync();
 
-        return Ok(new { message = "Usuário registrado com sucesso." });
+        return Ok(new { message = "User registered" });
+    }
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(AuthUserDto userDto)
+    {
+        User? user = await _userRepository.GetByEmailAsync(userDto.Email);
+        if (user == null)
+        {
+            return Unauthorized("Email or password wrong");
+        }
+
+        using HMACSHA512 hmac = new HMACSHA512(user.PasswordSalt);
+        byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(userDto.Password));
+
+        for (int i = 0; i < computedHash.Length; i++)
+        {
+            if (computedHash[i] != user.PasswordHash[i])
+            {
+                return Unauthorized("Email or password wrong");
+            }
+        }
+
+        string token = _tokenRepository.CreateToken(user);
+
+        CookieOptions cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = DateTime.UtcNow.AddDays(7),
+            Secure = true,
+        };
+
+        Response.Cookies.Append("authToken", token, cookieOptions);
+
+        return Ok(new
+        {
+            message = "Logged in",
+            user = new { user.Email, user.Id },
+        });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        CookieOptions cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = DateTime.UtcNow.AddDays(-1),
+            Secure = true,
+        };
+
+        Response.Cookies.Append("authToken", "", cookieOptions);
+
+        return Ok(new
+        {
+            message = "Logged off",
+        });
     }
 }

@@ -6,11 +6,11 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AutoQuizApi.Services;
 
-public class TokenServices : ITokenService
+public class TokenService : ITokenService
 {
     private readonly SymmetricSecurityKey _key;
 
-    public TokenServices(IConfiguration config)
+    public TokenService(IConfiguration config)
     {
         var secretKey = config["Jwt:Key"] ?? throw new ArgumentException("JWT Key not found in configuration");
         _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

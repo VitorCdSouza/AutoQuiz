@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: autoquiz_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: autouser
+      POSTGRES_PASSWORD: SenhaForte123
+      POSTGRES_DB: autodb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
