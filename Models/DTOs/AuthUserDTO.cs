@@ -5,6 +5,6 @@ public class AuthUserDto
     [Required, EmailAddress]
     public required string Email { get; set; }
 
-    [Required, MinLength(8)]
+    [Required]
     public required string Password { get; set; }
 }

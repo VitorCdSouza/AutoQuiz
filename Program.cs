@@ -1,9 +1,11 @@
+using System.Text;
 using AutoQuizApi.Data;
 using AutoQuizApi.Interfaces;
 using AutoQuizApi.Repositories;
 using AutoQuizApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,10 +17,21 @@ builder.Services.AddDbContext<AutoQuizDbContext>(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAiQuizService, GeminiQuizService>();
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                builder.Configuration["Jwt:Key"] ?? throw new ArgumentException("JWT Key not found"))),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -41,8 +54,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
