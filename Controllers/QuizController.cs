@@ -1,6 +1,8 @@
 using AutoQuizApi.Data;
+using AutoQuizApi.Interfaces;
+using AutoQuizApi.Models;
+using AutoQuizApi.Repositories;
 using AutoQuizApi.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutoQuizApi.Controllers;
@@ -9,13 +11,17 @@ namespace AutoQuizApi.Controllers;
 [ApiController]
 public class QuizController : BaseController
 {
-    private readonly AutoQuizDbContext _context;
+    private readonly AutoQuizDbContext _dbcontext;
+    private readonly IQuizRepository _quizRepository;
     private readonly IAiQuizService _aiQuiz;
+    private readonly IUserRepository _user;
 
-    public QuizController(AutoQuizDbContext context, IAiQuizService aiQuiz)
+    public QuizController(AutoQuizDbContext dbcontext, IAiQuizService aiQuiz, IQuizRepository quizRepository, IUserRepository user)
     {
-        _context = context;
+        _dbcontext = dbcontext;
         _aiQuiz = aiQuiz;
+        _quizRepository = quizRepository;
+        _user = user;
     }
 
     [HttpPost("upload")]
@@ -27,11 +33,59 @@ public class QuizController : BaseController
             return BadRequest("File not found");
         }
 
-        // ... (código para pegar userId, criar SourceDocument, etc.) ...
+        AiQuizDto aiResponse = await _aiQuiz.GenerateQuizFromFileAsync(file);
 
+        var fileExtension = Path.GetExtension(file.FileName);
+        var storedFileName = $"{Guid.NewGuid()}{fileExtension}";
 
-        var aiResponse = await _aiQuiz.GenerateQuizFromFileAsync(file);
+        SourceDocument sourceDocument = new SourceDocument
+        {
+            OriginalFileName = file.FileName,
+            StoredFileName = storedFileName,
+            ContentType = file.ContentType,
+            UploadedAt = DateTime.UtcNow
+        };
 
-        return Ok();
+        User user = await GetLoggedInUser() ?? throw new Exception("User not logged in");
+
+        Quiz quiz = new Quiz
+        {
+            Name = aiResponse.QuizTitle,
+            SourceDocument = sourceDocument,
+            User = user
+        };
+
+        foreach (AiQuestionDto question in aiResponse.Questions)
+        {
+            Question newQuestion = new Question
+            {
+                Text = question.Text,
+                Quiz = quiz
+            };
+
+            foreach (AiAnswerDto answer in question.Answers)
+            {
+                Answer newAnswer = new Answer
+                {
+                    Text = answer.Text,
+                    IsCorrect = answer.IsCorrect,
+                    Question = newQuestion
+                };
+                newQuestion.Answers.Add(newAnswer);
+            }
+            quiz.Questions.Add(newQuestion);
+        }
+
+        await _quizRepository.AddAsync(quiz);
+        await _dbcontext.SaveChangesAsync();
+
+        return Ok(aiResponse);
+    }
+
+    protected async Task<User?> GetLoggedInUser()
+    {
+        User? user = await _user.GetByIdAsync(GetLoggedInUserId());
+        return user;
+
     }
 }

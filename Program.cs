@@ -1,6 +1,7 @@
 using System.Text;
 using AutoQuizApi.Data;
 using AutoQuizApi.Interfaces;
+using AutoQuizApi.Models;
 using AutoQuizApi.Repositories;
 using AutoQuizApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,6 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AutoQuizDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAiQuizService, GeminiQuizService>();

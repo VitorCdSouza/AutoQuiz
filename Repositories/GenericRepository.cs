@@ -15,7 +15,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         _dbSet = _dbContext.Set<T>();
     }
 
-    public async Task<T?> GetByIdAsync(int id)
+    public async Task<T?> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);
     }
@@ -37,7 +37,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var entity = await _dbSet.FindAsync(id);
         if (entity != null)

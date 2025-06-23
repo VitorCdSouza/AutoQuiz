@@ -13,7 +13,7 @@ namespace AutoQuizApi.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserRepository _userRepository;
-    private readonly ITokenService _tokenRepository;
+    private readonly ITokenService _tokenRepository; // CreateToken method
     private readonly AutoQuizDbContext _dbcontext;
 
     public UserController(IUserRepository userRepository, ITokenService tokenService, AutoQuizDbContext dbcontext)
@@ -32,7 +32,6 @@ public class UserController : ControllerBase
         }
 
         using HMACSHA512 hmac = new HMACSHA512();
-
         User user = new User
         {
             Email = userDto.Email.ToLower(),
@@ -45,6 +44,7 @@ public class UserController : ControllerBase
 
         return Ok(new { message = "User registered" });
     }
+    
     [HttpPost("login")]
     public async Task<IActionResult> Login(AuthUserDto userDto)
     {

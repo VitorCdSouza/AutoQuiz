@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("5050e1e9-37c5-4293-aca5-117e784391b8")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("AutoQuizApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f26fd91ff9f90e0ea856c7aa3fbc0c50bbb0cae6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d5b72eed2b1cc19ee224ecac49159b9c6162089c")]
 [assembly: System.Reflection.AssemblyProductAttribute("AutoQuizApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AutoQuizApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
