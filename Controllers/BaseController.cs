@@ -20,6 +20,6 @@ public class BaseController : ControllerBase
                 return userId;
             }
         }
-        return Guid.Empty;
+        throw new Exception("User not logged in");
     }
 }

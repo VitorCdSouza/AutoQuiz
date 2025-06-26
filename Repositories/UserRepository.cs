@@ -23,4 +23,10 @@ public class UserRepository : GenericRepository<User>, IUserRepository
     {
         await _context.Users.AddAsync(user);
     }
+
+    public async Task<User?> GetUserById(Guid id)
+    {
+        User? user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        return user;
+    }
 }

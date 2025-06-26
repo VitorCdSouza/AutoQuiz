@@ -35,10 +35,10 @@ public class QuizController : BaseController
 
         AiQuizDto aiResponse = await _aiQuiz.GenerateQuizFromFileAsync(file);
 
-        var fileExtension = Path.GetExtension(file.FileName);
-        var storedFileName = $"{Guid.NewGuid()}{fileExtension}";
+        string fileExtension = Path.GetExtension(file.FileName);
+        string storedFileName = $"{Guid.NewGuid()}{fileExtension}";
 
-        SourceDocument sourceDocument = new SourceDocument
+        SourceDocument sourceDocument = new()
         {
             OriginalFileName = file.FileName,
             StoredFileName = storedFileName,
@@ -46,9 +46,9 @@ public class QuizController : BaseController
             UploadedAt = DateTime.UtcNow
         };
 
-        User user = await GetLoggedInUser() ?? throw new Exception("User not logged in");
+        User user = await _user.GetUserById(GetLoggedInUserId()) ?? throw new Exception("User not logged in");
 
-        Quiz quiz = new Quiz
+        Quiz quiz = new()
         {
             Name = aiResponse.QuizTitle,
             SourceDocument = sourceDocument,
@@ -57,7 +57,7 @@ public class QuizController : BaseController
 
         foreach (AiQuestionDto question in aiResponse.Questions)
         {
-            Question newQuestion = new Question
+            Question newQuestion = new()
             {
                 Text = question.Text,
                 Quiz = quiz
@@ -65,7 +65,7 @@ public class QuizController : BaseController
 
             foreach (AiAnswerDto answer in question.Answers)
             {
-                Answer newAnswer = new Answer
+                Answer newAnswer = new()
                 {
                     Text = answer.Text,
                     IsCorrect = answer.IsCorrect,
@@ -80,12 +80,5 @@ public class QuizController : BaseController
         await _dbcontext.SaveChangesAsync();
 
         return Ok(aiResponse);
-    }
-
-    protected async Task<User?> GetLoggedInUser()
-    {
-        User? user = await _user.GetByIdAsync(GetLoggedInUserId());
-        return user;
-
     }
 }

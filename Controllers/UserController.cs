@@ -31,8 +31,8 @@ public class UserController : ControllerBase
             return BadRequest("Email already in use");
         }
 
-        using HMACSHA512 hmac = new HMACSHA512();
-        User user = new User
+        using HMACSHA512 hmac = new();
+        User user = new()
         {
             Email = userDto.Email.ToLower(),
             PasswordSalt = hmac.Key,
@@ -44,7 +44,7 @@ public class UserController : ControllerBase
 
         return Ok(new { message = "User registered" });
     }
-    
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(AuthUserDto userDto)
     {
